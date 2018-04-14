@@ -80,6 +80,7 @@ def Entropy(y):
     dct = cnt(y)
     sm = np.sum(y)
     acc = 0;
+    print("for Git commit")
     for pair in dct.most_common():
         acc += np.log((pair[1] / sm)) * (pair[1] / sm)
     return -acc
