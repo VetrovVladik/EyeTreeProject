@@ -10,12 +10,12 @@ def CalcIC(x=None, y=None, method=None):
     right = []
     infoCriterion = 0
     minBoundary = 0
-    minInfo = 1
+    minInfo = 0
     boundary = 0
     xy = np.transpose(np.array([x, y]))
     xy = xy[xy[:, 0].argsort()]
     if (len(set(x)) <= 2):
-        boundary = np.mean(np.array(set(x)))
+        boundary = np.mean(list(set(x)))
         initVal = xy[:, 0][0]
         for ind, val in enumerate(xy[:, 0]):
             if val != initVal:
@@ -23,49 +23,54 @@ def CalcIC(x=None, y=None, method=None):
                 right = xy[:, 0][ind:]
                 break
         infoCriterion = method(y) - method(left) * len(left) / len(y) - method(right) * len(right) / len(y)
+        minInfo = infoCriterion
         minBoundary = boundary
+
     else:
         for ind, val in enumerate(xy[:, 0]):
             if (ind - 1) >= 0:
                 boundary = (val + xy[:, 0][ind - 1]) / 2
             else:
-                boundary = val
-            left = xy[:, 0][0:ind - 1]
-            right = xy[:, 0][ind:]
-            infoCriterion = method(y) - method(left) * len(left) / len(y) - method(right) * len(right) / len(y)
+                continue
 
-            if (infoCriterion < minInfo):
+            left = xy[:, 1][0:ind]
+            right = xy[:, 1][ind:]
+            infoCriterion = method(y) - (method(left) * len(left) / len(y)) - (method(right) * len(right) / len(y))
+
+            if (infoCriterion >= minInfo):
                 minInfo = infoCriterion
                 minBoundary = boundary
 
     return [minInfo, minBoundary]
 
+IC = CalcIC([2, 2, 3, 3, 2], [0, 0, 1, 1, 0], Gini)
+
+x = [1, 2, 5, 6, 3]
+y = [0, 0, 1, 1, 0]
+method = Gini
 
 def DoSplit(x, y, boundary):
-    indicies = [i for i in range(len(y))]
-    xyi = np.transpose(np.array([x, y, indicies]))
-    leftIndicies = []
-    rightIndicies = []
+    indices = [i for i in range(len(x))]
+    xyi = np.transpose(np.array([x, y, indices]))
+    leftIndices = []
+    rightIndices = []
     xyi = xyi[xyi[:, 0].argsort()]
+
     for ind, val in enumerate(xyi[:, 0]):
-        if val <= boundary:
-            left.append(xyi[:, 2][ind])
-        else:
-            left.append(xyi[:, 2][ind])
+        if val >= boundary:
+            leftIndices = (xyi[:, 2][:ind])
+            rightIndices = (xyi[:, 2][ind:])
+            break;
 
-
-return dict(["left", "right"], [leftIndicies, rightIndicies])
-
+    return {"left" : leftIndices, "right": rightIndices}
 
 def Gini(y):
-    cnt = Counter()
-    dct = cnt(y)
-    sm = np.sum(y)
+    dct = Counter(y)
+    sm = len(y)
     acc = 0;
     for pair in dct.most_common():
         acc += (pair[1] / sm) ** 2
     return 1 - acc
-
 
 def MSE(y):
     pred = np.mean(y)
@@ -74,20 +79,16 @@ def MSE(y):
         acc += (num - pred) ** 2
     return acc / len(y)
 
-
 def Entropy(y):
-    cnt = Counter()
-    dct = cnt(y)
-    sm = np.sum(y)
+    dct = Counter(y)
+    sm = len(y)
     acc = 0;
-    print("for Git commit")
     for pair in dct.most_common():
-        acc += np.log((pair[1] / sm)) * (pair[1] / sm)
+        acc += np.log2((pair[1] / sm)) * (pair[1] / sm)
     return -acc
 
-
 class EyeBinaryTreeNode:
-    def __init__(self, X=None, y=None, max_depth=10, min_sample_leaf=2, level, eyes=1, bof=3, criterion):
+    def __init__(self, X=None, y=None, max_depth=10, min_sample_leaf=2, level=0, eyes=1, bof=3, criterion=MSE):
         self._level = level
         self._left = None  # It's either EyeTreeNode or None
         self._right = None  # It's either EyeTreeNode or None
